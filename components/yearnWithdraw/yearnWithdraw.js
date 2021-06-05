@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Paper, Tabs, Tab, TextField, InputAdornment, Button, Grid, Slider, CircularProgress } from '@material-ui/core';
+import { Typography, Paper, Tabs, Tab, TextField, InputAdornment, Button, Grid, Slider, CircularProgress, Stepper, Step, StepLabel, StepConnector } from '@material-ui/core';
 import Skeleton from '@material-ui/lab/Skeleton';
 import BigNumber from 'bignumber.js';
 import { useRouter } from 'next/router';
@@ -13,22 +13,24 @@ import stores from '../../stores';
 
 export default function YearnWithdraw({ asset }) {
 
-  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawAmount, setWithdrawAmount] = useState('0');
   const [withdrawAmountError, setWithdrawAmountError] = useState(false);
+  const [activeStep, setActiveStep] = useState( asset.yearnVaultMetadata?.allowance > 0 ? 1 : 0 );
 
-  const [loading, setLoading] = useState(false);
+  const [withdrawLoading, setWithdrawLoading] = useState(false);
+  const [approveLoading, setApproveLoading] = useState(false);
 
   useEffect(function () {
     const withdrawReturned = () => {
-      setLoading(false);
+      setWithdrawLoading(false);
     };
-
     const approveReturned = () => {
-      setLoading(false);
+      setApproveLoading(false);
     };
 
     const errorReturned = () => {
-      setLoading(false);
+      setWithdrawLoading(false);
+      setApproveLoading(false);
     };
 
     stores.emitter.on(DELEGATE_WITHDRAW_RETURNED, withdrawReturned);
@@ -50,36 +52,19 @@ export default function YearnWithdraw({ asset }) {
   const onWithdraw = () => {
     setWithdrawAmountError(false);
 
-    setLoading(true);
+    setWithdrawLoading(true);
     stores.dispatcher.dispatch({
       type: DELEGATE_WITHDRAW,
       content: {
         asset: asset,
-        withdrawAmount: withdrawAmount,
+        amount: withdrawAmount,
       },
     });
   };
 
-  const onApprove = () => {
-    if (!withdrawAmount || isNaN(withdrawAmount) || withdrawAmount <= 0 || BigNumber(withdrawAmount).gt(asset.balance)) {
-      setWithdrawAmountError(true);
-      return false;
-    }
-
-    setLoading(true);
-    stores.dispatcher.dispatch({
-      type: DELEGATE_APPROVE_WITHDRAW,
-      content: { asset: asset, amount: withdrawAmount },
-    });
-  };
-
   const onApproveMax = () => {
-    if (!withdrawAmount || isNaN(withdrawAmount) || withdrawAmount <= 0 || BigNumber(withdrawAmount).gt(asset.balance)) {
-      setWithdrawAmountError(true);
-      return false;
-    }
+    setApproveLoading(true);
 
-    setLoading(true);
     stores.dispatcher.dispatch({
       type: DELEGATE_APPROVE_WITHDRAW,
       content: { asset: asset, amount: 'max' },
@@ -87,12 +72,17 @@ export default function YearnWithdraw({ asset }) {
   };
 
   const setWithdrawAmountPercent = (percent) => {
-    if (loading) {
+    if (withdrawLoading) {
       return;
     }
-    const amount = BigNumber(asset.balance).times(percent).div(100).toFixed(asset.decimals);
+
+    const amount = BigNumber(asset.yearnVaultMetadata?.balance).times(percent).div(100).toFixed(asset.yearnVaultMetadata.decimals);
     setWithdrawAmount(amount);
   };
+
+  const getSteps = () => {
+    return ['Approval', 'Withdraw'];
+  }
 
   return (
     <div className={classes.vaultActionContainer}>
@@ -112,7 +102,7 @@ export default function YearnWithdraw({ asset }) {
               className={classes.value}
               noWrap
             >
-              Balance: {!asset.balance && asset.balance !== 0 ? <Skeleton /> : formatCurrency(asset.balance)}
+              Balance: {!asset.yearnVaultMetadata?.balance && asset.yearnVaultMetadata?.balance !== 0 ? <Skeleton /> : formatCurrency(asset.yearnVaultMetadata?.balance)}
             </Typography>
           </div>
         </div>
@@ -124,7 +114,7 @@ export default function YearnWithdraw({ asset }) {
           error={withdrawAmountError}
           onChange={onWithdrawAmountChanged}
           InputProps={{
-            endAdornment: <InputAdornment position="end">{asset.symbol}</InputAdornment>,
+            endAdornment: <InputAdornment position="end">{asset.yearnVaultMetadata?.symbol}</InputAdornment>,
             startAdornment: (
               <InputAdornment position="start">
                 <img src={asset.icon} alt="" width={30} height={30} />
@@ -133,44 +123,33 @@ export default function YearnWithdraw({ asset }) {
           }}
         />
       </div>
+      <div>
+        <Stepper alternativeLabel activeStep={activeStep} >
+          {getSteps().map((label) => (
+            <Step key={label}>
+              <StepLabel >{}</StepLabel>
+            </Step>
+          ))}
+        </Stepper>
+      </div>
       <div className={classes.actionButton}>
-        {(withdrawAmount === '' || BigNumber(asset.allowance).gte(withdrawAmount)) && (
-          <Button fullWidth disableElevation variant="contained" color="primary" size="large" onClick={onWithdraw} disabled={loading}>
-            <Typography variant="h5">
-              {loading ? <CircularProgress size={25} /> : 'Withdraw' }
-            </Typography>
-          </Button>
-        )}
-        {withdrawAmount !== '' &&
-          BigNumber(withdrawAmount).gt(0) &&
-          (!asset.allowance || BigNumber(asset.allowance).eq(0) || BigNumber(asset.allowance).lt(withdrawAmount)) && (
-            <React.Fragment>
-              <Button
-                fullWidth
-                disableElevation
-                variant="contained"
-                color="primary"
-                size="large"
-                onClick={onApprove}
-                disabled={loading}
-                className={classes.marginRight}
-              >
-                <Typography variant="h5">{loading ? <CircularProgress size={25} /> : 'Approve Exact'}</Typography>
-              </Button>
-              <Button
-                fullWidth
-                disableElevation
-                variant="contained"
-                color="primary"
-                size="large"
-                onClick={onApproveMax}
-                disabled={loading}
-                className={classes.marginLeft}
-              >
-                <Typography variant="h5">{loading ? <CircularProgress size={25} /> : 'Approve Max'}</Typography>
-              </Button>
-            </React.Fragment>
-          )}
+        <Button
+          fullWidth
+          disableElevation
+          variant="contained"
+          color="primary"
+          size="large"
+          onClick={onApproveMax}
+          disabled={approveLoading || BigNumber(asset.yearnVaultMetadata?.allowance).gt(withdrawAmount)}
+          className={ BigNumber(asset.yearnVaultMetadata?.allowance).gt(withdrawAmount) ? classes.approvedButton : null }
+        >
+          <Typography variant="h5">{approveLoading ? <CircularProgress size={15} /> : ( BigNumber(asset.yearnVaultMetadata?.allowance).gt(withdrawAmount) ? 'Approved' : 'Approve')}</Typography>
+        </Button>
+        <Button fullWidth disableElevation variant="contained" color="primary" size="large" onClick={onWithdraw} disabled={withdrawLoading || withdrawAmount === '' || BigNumber(withdrawAmount).lte(0)}>
+          <Typography variant="h5">
+            {withdrawLoading ? <CircularProgress size={15} /> : 'Withdraw' }
+          </Typography>
+        </Button>
       </div>
     </div>
   );

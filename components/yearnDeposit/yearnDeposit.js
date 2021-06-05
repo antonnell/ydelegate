@@ -117,7 +117,7 @@ export default function YearnDeposit({ asset }) {
       type: DELEGATE_DEPOSIT,
       content: {
         asset: asset,
-        depositAmount: depositAmount,
+        amount: depositAmount
       },
     });
   };
@@ -135,7 +135,7 @@ export default function YearnDeposit({ asset }) {
     if (depositLoading || approveLoading) {
       return;
     }
-    const amount = BigNumber(asset.balance).times(percent).div(100).toFixed(asset.decimals);
+    const amount = BigNumber(asset?.availableToBorrow).times(percent).div(100).toFixed(asset.decimals);
     setDepositAmount(amount);
   };
 
@@ -161,7 +161,7 @@ export default function YearnDeposit({ asset }) {
               className={classes.value}
               noWrap
             >
-              Balance: {!asset.balance && asset.balance !== 0 ? <Skeleton /> : formatCurrency(asset.balance)}
+              Balance: {!asset.availableToBorrow && asset.availableToBorrow !== 0 ? <Skeleton /> : formatCurrency(asset.availableToBorrow)}
             </Typography>
           </div>
         </div>
@@ -199,10 +199,10 @@ export default function YearnDeposit({ asset }) {
           color="primary"
           size="large"
           onClick={onApproveMax}
-          disabled={approveLoading}
-          className={ BigNumber(asset.aaveVaultMetadata?.allowance).gte(depositAmount) ? classes.approvedButton : null }
+          disabled={approveLoading || BigNumber(asset.aaveVaultMetadata?.allowance).gt(depositAmount)}
+          className={ BigNumber(asset.aaveVaultMetadata?.allowance).gt(depositAmount) ? classes.approvedButton : null }
         >
-          <Typography variant="h5">{approveLoading ? <CircularProgress size={15} /> : ( BigNumber(asset.aaveVaultMetadata?.allowance).gte(depositAmount) ? 'Approved' : 'Approve')}</Typography>
+          <Typography variant="h5">{approveLoading ? <CircularProgress size={15} /> : ( BigNumber(asset.aaveVaultMetadata?.allowance).gt(depositAmount) ? 'Approved' : 'Approve')}</Typography>
         </Button>
         <Button fullWidth disableElevation variant="contained" color="primary" size="large" onClick={onDeposit} disabled={depositLoading || depositAmount === '' || BigNumber(depositAmount).lte(0)}>
           <Typography variant="h5">

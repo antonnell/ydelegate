@@ -13,7 +13,15 @@ import {
   DELEGATE_BALANCES_RETURNED,
   Y_DELEGATE_ADDRESS,
   AAVE_LENDING_POOL_ADDRESS,
-  AAVE_ORACLE_ADDRESS
+  AAVE_ORACLE_ADDRESS,
+  DELEGATE_APPROVE_DEPOSIT,
+  DELEGATE_APPROVE_DEPOSIT_RETURNED,
+  DELEGATE_DEPOSIT,
+  DELEGATE_DEPOSIT_RETURNED,
+  DELEGATE_WITHDRAW,
+  DELEGATE_WITHDRAW_RETURNED,
+  DELEGATE_APPROVE_WITHDRAW,
+  DELEGATE_APPROVE_WITHDRAW_RETURNED
 } from './constants';
 
 import { ERC20_ABI, Y_DELEGATE_ABI, VARIABLE_DEBIT_TOKEN_ABI, YEARN_VAULT_ABI, AAVE_LENDING_POOL_ABI, AAVE_ORACLE_ABI } from './abis';
@@ -48,6 +56,18 @@ class Store {
             break;
           case DELEGATE_GET_BALANCES:
             this.getBalances(payload);
+            break;
+          case DELEGATE_APPROVE_DEPOSIT:
+            this.approveDeposit(payload);
+            break;
+          case DELEGATE_DEPOSIT:
+            this.deposit(payload);
+            break;
+          case DELEGATE_APPROVE_WITHDRAW:
+            this.approveWithdraw(payload);
+            break;
+          case DELEGATE_WITHDRAW:
+            this.withdraw(payload);
             break;
           default: {
           }
@@ -202,16 +222,6 @@ class Store {
     });
     const aaveVaultBalances = await Promise.all(aaveVaultBalancesPromise);
 
-    //get all aave allowances
-    const aaveVaultAllowancePromise = assets.map((asset) => {
-      return new Promise((resolve, reject) => {
-        const erc20Contract = new web3.eth.Contract(ERC20_ABI, asset.address);
-
-        resolve(erc20Contract.methods.allowance(account.address, asset.aaveVaultMetadata.address).call());
-      });
-    });
-    const aaveVaultAllowances = await Promise.all(aaveVaultAllowancePromise);
-
     //get all yearn balances
     const yearnVaultBalancesPromise = assets.map((asset) => {
       return new Promise((resolve, reject) => {
@@ -225,9 +235,9 @@ class Store {
     //get all yearn allowances
     const yearnVaultAllowancePromise = assets.map((asset) => {
       return new Promise((resolve, reject) => {
-        const erc20Contract = new web3.eth.Contract(ERC20_ABI, asset.address);
+        const erc20Contract = new web3.eth.Contract(YEARN_VAULT_ABI, asset.yearnVaultMetadata.address);
 
-        resolve(erc20Contract.methods.allowance(account.address, asset.yearnVaultMetadata.address).call());
+        resolve(erc20Contract.methods.allowance(account.address, Y_DELEGATE_ADDRESS).call());
       });
     });
     const yearnVaultAllowances = await Promise.all(yearnVaultAllowancePromise);
@@ -264,6 +274,18 @@ class Store {
 
     this.setStore({ aaveUserAccountData: aaveUserAccountData });
 
+
+
+    const yDelegateContract = new web3.eth.Contract(Y_DELEGATE_ABI, Y_DELEGATE_ADDRESS);
+
+    //get all aave allowances
+    const aaveVaultAllowancePromise = assets.map((asset) => {
+      return new Promise((resolve, reject) => {
+
+        resolve(yDelegateContract.methods.available(account.address, asset.address).call());
+      });
+    });
+    const aaveVaultAllowances = await Promise.all(aaveVaultAllowancePromise);
 
     for (let i = 0; i < assets.length; i++) {
       assets[i].balance = BigNumber(assetBalances[i])
@@ -303,6 +325,158 @@ class Store {
     this.emitter.emit(DELEGATE_BALANCES_RETURNED, assets);
   };
 
+  approveDeposit = async (payload) => {
+    const account = stores.accountStore.getStore('account');
+    if (!account) {
+      return false;
+    }
+
+    const web3 = await stores.accountStore.getWeb3Provider();
+    if (!web3) {
+      return false;
+    }
+
+    const { asset, amount, gasSpeed } = payload.content;
+
+    this._callApproveDeposit(web3, asset, account, amount, gasSpeed, (err, approveResult) => {
+      if (err) {
+        return this.emitter.emit(ERROR, err);
+      }
+
+      return this.emitter.emit(DELEGATE_APPROVE_DEPOSIT_RETURNED, approveResult);
+    });
+  };
+
+  _callApproveDeposit = async (web3, asset, account, amount, gasSpeed, callback) => {
+    const tokenContract = new web3.eth.Contract(VARIABLE_DEBIT_TOKEN_ABI, asset.aaveVaultMetadata.address);
+
+    let amountToSend = '0';
+    if (amount === 'max') {
+      amountToSend = MAX_UINT256;
+    } else {
+      amountToSend = BigNumber(amount)
+        .times(10 ** asset.aaveVaultMetadata.decimals)
+        .toFixed(0);
+    }
+
+    const gasPrice = await stores.accountStore.getGasPrice(gasSpeed);
+
+    this._callContract(web3, tokenContract, 'approveDelegation', [Y_DELEGATE_ADDRESS, amountToSend], account, gasPrice, DELEGATE_GET_BALANCES, {}, callback);
+  };
+
+  approveWithdraw = async (payload) => {
+    const account = stores.accountStore.getStore('account');
+    if (!account) {
+      return false;
+    }
+
+    const web3 = await stores.accountStore.getWeb3Provider();
+    if (!web3) {
+      return false;
+    }
+
+    const { asset, amount, gasSpeed } = payload.content;
+
+    this._callApproveWithdraw(web3, asset, account, amount, gasSpeed, (err, approveResult) => {
+      if (err) {
+        return this.emitter.emit(ERROR, err);
+      }
+
+      return this.emitter.emit(DELEGATE_APPROVE_WITHDRAW_RETURNED, approveResult);
+    });
+  };
+
+  _callApproveWithdraw = async (web3, asset, account, amount, gasSpeed, callback) => {
+    const tokenContract = new web3.eth.Contract(YEARN_VAULT_ABI, asset.yearnVaultMetadata.address);
+
+    let amountToSend = '0';
+    if (amount === 'max') {
+      amountToSend = MAX_UINT256;
+    } else {
+      amountToSend = BigNumber(amount)
+        .times(10 ** asset.yearnVaultMetadata.decimals)
+        .toFixed(0);
+    }
+
+    const gasPrice = await stores.accountStore.getGasPrice(gasSpeed);
+
+    this._callContract(web3, tokenContract, 'approve', [Y_DELEGATE_ADDRESS, amountToSend], account, gasPrice, DELEGATE_GET_BALANCES, {}, callback);
+  };
+
+  deposit = async (payload) => {
+    const account = stores.accountStore.getStore('account');
+    if (!account) {
+      return false;
+    }
+
+    const web3 = await stores.accountStore.getWeb3Provider();
+    if (!web3) {
+      return false;
+    }
+
+    const { asset, amount, gasSpeed } = payload.content;
+
+    this._callDeposit(web3, asset, account, amount, gasSpeed, (err, depositResult) => {
+      if (err) {
+        return this.emitter.emit(ERROR, err);
+      }
+
+      return this.emitter.emit(DELEGATE_DEPOSIT_RETURNED, depositResult);
+    });
+  };
+
+  _callDeposit = async (web3, asset, account, amount, gasSpeed, callback) => {
+
+    const yDelegateContract = new web3.eth.Contract(Y_DELEGATE_ABI, Y_DELEGATE_ADDRESS);
+
+    const amountToSend = BigNumber(amount)
+      .times(10 ** asset.decimals)
+      .toFixed(0);
+
+    const gasPrice = await stores.accountStore.getGasPrice(gasSpeed);
+
+    this._callContract(web3, yDelegateContract, 'deposit', [asset.address, amountToSend], account, gasPrice, DELEGATE_GET_BALANCES, {}, callback);
+  };
+
+  withdraw = async (payload) => {
+    const account = stores.accountStore.getStore('account');
+    if (!account) {
+      return false;
+    }
+
+    const web3 = await stores.accountStore.getWeb3Provider();
+    if (!web3) {
+      return false;
+    }
+
+    const { asset, amount, gasSpeed } = payload.content;
+
+    this._callwithdraw(web3, asset, account, amount, gasSpeed, (err, withdrawResult) => {
+      if (err) {
+        return this.emitter.emit(ERROR, err);
+      }
+
+      return this.emitter.emit(DELEGATE_WITHDRAW_RETURNED, withdrawResult);
+    });
+  };
+
+  _callwithdraw = async (web3, asset, account, amount, gasSpeed, callback) => {
+    const yDelegateContract = new web3.eth.Contract(Y_DELEGATE_ABI, Y_DELEGATE_ADDRESS);
+
+    const amountToSend = BigNumber(amount)
+      .times(10 ** asset.yearnVaultMetadata.decimals)
+      .toFixed(0);
+
+    const maxLoss = BigNumber(amount)
+      .times(0.03)
+      .times(10 ** asset.yearnVaultMetadata.decimals)
+      .toFixed(0);
+
+    const gasPrice = await stores.accountStore.getGasPrice(gasSpeed);
+
+    this._callContract(web3, yDelegateContract, 'withdraw', [asset.address, amountToSend, maxLoss], account, gasPrice, DELEGATE_GET_BALANCES, {}, callback);
+  };
+
   _callContract = (web3, contract, method, params, account, gasPrice, dispatchEvent, dispatchEventPayload, callback) => {
     const context = this;
     contract.methods[method](...params)
@@ -314,11 +488,18 @@ class Store {
         context.emitter.emit(TX_SUBMITTED, hash);
         callback(null, hash);
       })
-      .on('confirmation', function (confirmationNumber, receipt) {
-        if (dispatchEvent && confirmationNumber == 0) {
+      .on('receipt', function (receipt) {
+        callback(null, receipt.transactionHash);
+
+        if (dispatchEvent) {
           context.dispatcher.dispatch({ type: dispatchEvent, content: dispatchEventPayload });
         }
       })
+      // .on('confirmation', function (confirmationNumber, receipt) {
+      //   if (dispatchEvent && confirmationNumber == 0) {
+      //     context.dispatcher.dispatch({ type: dispatchEvent, content: dispatchEventPayload });
+      //   }
+      // })
       .on('error', function (error) {
         if (!error.toString().includes('-32601')) {
           if (error.message) {
@@ -345,9 +526,11 @@ class Store {
         gasPrice: web3.utils.toWei(gasPrice, 'gwei'),
       })
       .on('transactionHash', function (hash) {
-        context.emitter.emit(TX_SUBMITTED, hash);
+        console.log(hash)
+        // context.emitter.emit(TX_SUBMITTED, hash);
       })
       .on('receipt', function (receipt) {
+        context.emitter.emit(TX_SUBMITTED, receipt.transactionHash);
         callback(null, receipt.transactionHash);
 
         if (dispatchEvent) {

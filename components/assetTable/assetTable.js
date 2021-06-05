@@ -62,7 +62,7 @@ const headCells = [
   },
   { id: 'aaveVaultMetadata.balance', numeric: true, disablePadding: false, label: 'Aave Borrow Rate', helperText: 'The variable cost of borrowing the asset from Aave per year' },
   { id: 'yearnVaultMetadata.balance', numeric: true, disablePadding: false, label: 'Yearn Vault Growth', helperText: 'The amount your investment will grow per year in Yearn vaults' },
-  { id: '', numeric: true, disablePadding: false, label: 'Net growth', helperText: '{Net Growth} = {Yearn Vault Growth} - {Aave Borrow Rate}' },
+  { id: 'netGrowth', numeric: true, disablePadding: false, label: 'Net growth', helperText: '{Net Growth} = {Yearn Vault Growth} - {Aave Borrow Rate}' },
   { id: '', numeric: false, disablePadding: false, label: '' },
 ];
 

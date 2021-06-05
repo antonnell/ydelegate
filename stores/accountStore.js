@@ -1,6 +1,7 @@
 import async from "async";
 import {
   GAS_PRICE_API,
+  ZAPPER_GAS_PRICE_API,
   ERROR,
   STORE_UPDATED,
   CONFIGURE,
@@ -46,7 +47,6 @@ class Store {
         Portis: portis
       },
       gasPrices: {
-        slow: 90,
         standard: 90,
         fast: 100,
         instant: 130
@@ -158,7 +158,7 @@ class Store {
 
   _getGasPrices = async () => {
     try {
-      const url = GAS_PRICE_API;
+      const url = ZAPPER_GAS_PRICE_API;
       const priceResponse = await fetch(url);
       const priceJSON = await priceResponse.json();
 
@@ -178,7 +178,7 @@ class Store {
     }
 
     try {
-      const url = GAS_PRICE_API;
+      const url = ZAPPER_GAS_PRICE_API;
       const priceResponse = await fetch(url);
       const priceJSON = await priceResponse.json();
 
