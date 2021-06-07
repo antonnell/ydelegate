@@ -349,7 +349,7 @@ export default function EnhancedTable({ assets }) {
                     <Typography variant="h5" className={classes.textSpaced}>
                       {formatCurrency(row.aaveVaultMetadata?.balance)} {row?.symbol}
                     </Typography>
-                    <Typography variant="h3" className={classes.textSpaced}>
+                    <Typography variant="h5" className={classes.textSpaced}>
                       {formatCurrency(row.aaveVaultMetadata?.borrowRate)} %
                     </Typography>
                   </TableCell>
@@ -357,12 +357,12 @@ export default function EnhancedTable({ assets }) {
                     <Typography variant="h5" className={classes.textSpaced}>
                       {formatCurrency(row.yearnVaultMetadata?.balance)} {row.yearnVaultMetadata?.symbol}
                     </Typography>
-                    <Typography variant="h3" className={classes.textSpaced}>
+                    <Typography variant="h5" className={classes.textSpaced}>
                       {formatCurrency(row.yearnVaultMetadata?.apy)} %
                     </Typography>
                   </TableCell>
                   <TableCell className={classes.cellHiddenSmall} align="right">
-                    <Typography variant="h3" className={classes.textSpaced}>
+                    <Typography variant="h5" className={classes.textSpaced}>
                       {formatCurrency(BigNumber(row.yearnVaultMetadata?.apy).minus(row.aaveVaultMetadata?.borrowRate))} %
                     </Typography>
                   </TableCell>
