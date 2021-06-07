@@ -6,13 +6,17 @@ import { withTheme } from '@material-ui/core/styles';
 
 import Layout from '../../components/layout/layout.js';
 import Header from '../../components/header';
+import Footer from '../../components/footer';
 import AssetTable from '../../components/assetTable';
 import Balances from '../../components/balances'
+
+import AddIcon from '@material-ui/icons/Add';
+import ArrowForwardIcon from '@material-ui/icons/ArrowForward';
 
 import classes from './assets.module.css';
 
 import stores from '../../stores/index.js';
-import { ERROR, GET_ASSETS, ASSETS_RETURNED, DELEGATE_CONFIGURED, DELEGATE_BALANCES_RETURNED } from '../../stores/constants';
+import { ERROR, GET_ASSETS, ASSETS_RETURNED, DELEGATE_CONFIGURED, DELEGATE_BALANCES_RETURNED, ACCOUNT_CHANGED, CONNECT_WALLET } from '../../stores/constants';
 
 import { formatCurrency, formatAddress } from '../../utils';
 
@@ -23,6 +27,11 @@ function Assets({ changeTheme, theme }) {
 
   const [loading, setLoading] = useState(false);
   const [assets, setAssets] = useState(null);
+  const [account, setAccount] = useState(null);
+
+  const onConnectWallet = () => {
+    stores.emitter.emit(CONNECT_WALLET);
+  };
 
   useEffect(function () {
     const assetsReturned = () => {
@@ -36,9 +45,16 @@ function Assets({ changeTheme, theme }) {
       stores.dispatcher.dispatch({ type: GET_ASSETS, content: {} });
     };
 
+    const accountChanged = () => {
+      setAccount(stores.accountStore.getStore('account'))
+    }
+
+    setAccount(stores.accountStore.getStore('account'))
+
     stores.emitter.on(ASSETS_RETURNED, assetsReturned);
     stores.emitter.on(DELEGATE_CONFIGURED, delegateReturned);
     stores.emitter.on(DELEGATE_BALANCES_RETURNED, delegateReturned);
+    stores.emitter.on(ACCOUNT_CHANGED, accountChanged);
 
     setLoading(true);
     stores.dispatcher.dispatch({ type: GET_ASSETS, content: {} });
@@ -47,6 +63,7 @@ function Assets({ changeTheme, theme }) {
       stores.emitter.removeListener(ASSETS_RETURNED, assetsReturned);
       stores.emitter.removeListener(DELEGATE_CONFIGURED, delegateReturned);
       stores.emitter.removeListener(DELEGATE_BALANCES_RETURNED, delegateReturned);
+      stores.emitter.removeListener(ACCOUNT_CHANGED, accountChanged);
     };
   }, []);
 
@@ -60,15 +77,32 @@ function Assets({ changeTheme, theme }) {
           <div>
             <Balances />
           </div>
-          {loading && (
-            <div className={classes.projectsLoading}>
-              <Typography variant="h5" className={classes.projectsLoadingSpace}>
-                We are loading the assets
-              </Typography>
-              <CircularProgress size={15} />
+          {
+            !account &&
+            <div className={ classes.marketing}>
+              <div>
+                <Typography variant='h1' className={ classes.blueText }>yDelegate</Typography>
+                <Typography variant='h2' className={ classes.helperText }>Maximizing your profits using the power of Yearn vaults</Typography>
+                <Typography className={ classes.helperText }>yDelegate puts your idle Aave capital to work. Making use of Yearn's Vaults, your funds will generate consistant yield without any additional management from you.</Typography>
+                <Button
+                  size='large'
+                  color='primary'
+                  variant='contained'
+                  onClick={onConnectWallet}
+                  disabled={loading}
+                  endIcon={<AddIcon />}>
+                  <Typography variant="h5">Connect Wallet</Typography>
+                </Button>
+              </div>
+              <div className={ classes.protocols }>
+                <img src='/aave.svg' alt='Aave logo' width={120} height={120} className={ classes.protocolIcon } />
+                <ArrowForwardIcon />
+                <img src='/favicon.png' alt='YFI logo' width={120} height={120} className={ classes.protocolIcon } />
+              </div>
             </div>
-          )}
-          {!loading && <div className={classes.tableContainer}>{assets && assets.length > 0 && <AssetTable assets={assets} />}</div>}
+          }
+          { account && account.address && <div className={classes.tableContainer}>{<AssetTable assets={assets} />}</div>}
+          <Footer />
         </div>
       </div>
     </Layout>

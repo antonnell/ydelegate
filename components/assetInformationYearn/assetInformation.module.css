@@ -43,3 +43,15 @@
 .valueLineHeight {
   line-height: 1.5 !important;
 }
+
+
+@media screen and (max-width: 1000px) {
+  .vaultActionContainer {
+    width: -webkit-fill-available;
+    max-width: initial;
+  }
+  .vaultActionContainerDark {
+    width: -webkit-fill-available;
+    max-width: initial;
+  }
+}

@@ -90,7 +90,7 @@ function EnhancedTableHead(props) {
     <TableHead>
       <TableRow>
         {headCells.map((headCell) => (
-          <TableCell key={headCell.id} align={headCell.numeric ? 'right' : 'left'} padding={'default'} sortDirection={orderBy === headCell.id ? order : false}>
+          <TableCell key={headCell.id} align={headCell.numeric ? 'right' : 'left'} padding={'default'} sortDirection={orderBy === headCell.id ? order : false} className={ ['balance', 'netGrowth', ''].includes(headCell.id) && classes.cellHiddenSmall }>
             <TableSortLabel active={orderBy === headCell.id} direction={orderBy === headCell.id ? order : 'asc'} onClick={createSortHandler(headCell.id)}>
               {headCell.helperText && (
                 <Tooltip title={headCell.helperText}>
@@ -124,9 +124,6 @@ const useStyles = makeStyles((theme) => ({
     width: '100%',
     marginBottom: theme.spacing(2),
   },
-  table: {
-    minWidth: 750,
-  },
   infoIcon: {
     fontSize: '15px',
     marginLeft: '6px',
@@ -154,6 +151,11 @@ const useStyles = makeStyles((theme) => ({
     lineHeight: '1.5',
   },
   cell: {},
+  cellHiddenSmall: {
+    '@media (max-width:1000px)' : {
+      display: 'none'
+    }
+  },
   cellSuccess: {
     color: '#4eaf0a',
   },
@@ -188,6 +190,9 @@ const useStyles = makeStyles((theme) => ({
     borderTop: '1px solid rgba(128, 128, 128, 0.25)',
     background: theme.palette.type === 'dark' ? '#22252E' : '#fff',
     borderRadius: '0px 0px 10px 10px',
+    '@media (max-width:1000px)' : {
+      flexDirection: 'column'
+    }
   },
   assetInfo: {
     display: 'flex',
@@ -251,7 +256,7 @@ const ExpandableTableRow = ({ children, expandComponent, ...otherProps }) => {
     <React.Fragment>
       <TableRow hover className={classes.hoverRow} {...otherProps} onClick={() => setIsExpanded(!isExpanded)}>
         {children}
-        <TableCell padding="checkbox">
+        <TableCell padding="checkbox" className={ classes.cellHiddenSmall}>
           <IconButton>{isExpanded ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}</IconButton>
         </TableCell>
       </TableRow>
@@ -284,14 +289,14 @@ export default function EnhancedTable({ assets }) {
 
   if (!assets) {
     return (
-      <div className={classes.root}>
+      <Paper className={classes.root}>
         <Skeleton variant="rect" width={'100%'} height={40} className={classes.skelly1} />
         <Skeleton variant="rect" width={'100%'} height={70} className={classes.skelly} />
         <Skeleton variant="rect" width={'100%'} height={70} className={classes.skelly} />
         <Skeleton variant="rect" width={'100%'} height={70} className={classes.skelly} />
         <Skeleton variant="rect" width={'100%'} height={70} className={classes.skelly} />
         <Skeleton variant="rect" width={'100%'} height={70} className={classes.skelly} />
-      </div>
+      </Paper>
     );
   }
 
@@ -326,14 +331,16 @@ export default function EnhancedTable({ assets }) {
                         }}
                         className={classes.icon}
                       />
-                      <div className={classes.aligntRight}>
-                        <Typography variant="h5" className={classes.textSpaced}>
-                          {row?.symbol}
-                        </Typography>
+                      <div className={ classes.cellHiddenSmall}>
+                        <div className={classes.aligntRight}>
+                          <Typography variant="h5" className={classes.textSpaced}>
+                            {row?.symbol}
+                          </Typography>
+                        </div>
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className={classes.cell} align="right">
+                  <TableCell className={classes.cellHiddenSmall} align="right">
                     <Typography variant="h5" className={classes.textSpaced}>
                       {formatCurrency(row.balance)} {row?.symbol}
                     </Typography>
@@ -354,7 +361,7 @@ export default function EnhancedTable({ assets }) {
                       {formatCurrency(row.yearnVaultMetadata?.apy)} %
                     </Typography>
                   </TableCell>
-                  <TableCell className={classes.cell} align="right">
+                  <TableCell className={classes.cellHiddenSmall} align="right">
                     <Typography variant="h3" className={classes.textSpaced}>
                       {formatCurrency(BigNumber(row.yearnVaultMetadata?.apy).minus(row.aaveVaultMetadata?.borrowRate))} %
                     </Typography>

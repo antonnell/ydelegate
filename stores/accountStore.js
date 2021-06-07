@@ -92,6 +92,7 @@ class Store {
                 account: { address: a.account },
                 web3context: { library: { provider: a.provider } }
               });
+              this.emitter.emit(ACCOUNT_CHANGED);
               this.emitter.emit(CONFIGURE_RETURNED);
               this.dispatcher.dispatch({ type: CONFIGURE_DELEGATE });
             })

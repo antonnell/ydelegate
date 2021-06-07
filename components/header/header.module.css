@@ -58,6 +58,7 @@
 
 @media screen and (max-width: 1000px) {
   .headerContainer {
-    padding: 0px 24px;
+    height: 80px;
+    padding: 0px 12px;
   }
 }

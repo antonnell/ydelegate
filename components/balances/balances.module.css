@@ -29,6 +29,11 @@
   margin-left: 6px;
 }
 
+.fillerContent {
+  margin-right: 24px !important;
+  color: #2f80ed;
+}
+
 @media screen and (max-width: 1600px) {
   .overviewContainer {
     margin: 24px 24px;

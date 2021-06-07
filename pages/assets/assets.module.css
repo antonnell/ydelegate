@@ -34,6 +34,33 @@
   padding: 0px 80px;
 }
 
+.marketing {
+  display: flex;
+  padding: 68px;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.blueText {
+  color: #2F80ED;
+  padding-bottom: 16px;
+}
+
+.helperText {
+  padding-bottom: 16px;
+  max-width: 500px;
+}
+
+.protocols {
+  display: flex;
+  align-items: center;
+  margin-left: 10vw;
+}
+
+.protocolIcon {
+
+}
+
 .projectsLoading {
   display: flex;
   align-items: center;
@@ -68,6 +95,28 @@
   .listContainerDark {
     width: calc(100vw - 17px);
     padding: 0px;
+  }
+}
+
+
+@media screen and (max-width: 1000px) {
+  .headerContainer {
+    padding: 12px 0px;
+  }
+
+  .marketing {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 36px;
+  }
+
+  .protocols {
+    margin-top: 10vh;
+    margin-left: 0vw;
+  }
+
+  .tableContainer {
+    margin: 12px;
   }
 }
 

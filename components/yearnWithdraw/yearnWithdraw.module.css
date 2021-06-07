@@ -58,3 +58,10 @@
     padding: 24px;
   }
 }
+
+@media screen and (max-width: 1000px) {
+  .vaultActionContainer {
+    width: -webkit-fill-available;
+    max-width: initial;
+  }
+}

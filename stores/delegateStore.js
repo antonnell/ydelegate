@@ -31,7 +31,6 @@ import * as moment from 'moment';
 import stores from './';
 import { bnDec } from '../utils';
 import BigNumber from 'bignumber.js';
-import delegateData from './configurations/delegate';
 
 const fetch = require('node-fetch');
 
@@ -42,7 +41,7 @@ class Store {
 
     this.store = {
       configured: false,
-      assets: delegateData,
+      assets: null,
     };
 
     dispatcher.register(

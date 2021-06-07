@@ -120,13 +120,6 @@ function Header(props) {
 
   return (
     <div className={classes.headerContainer}>
-      {props.backClicked && (
-        <div className={classes.backButton}>
-          <Button color={props.theme.palette.type === 'light' ? 'primary' : 'secondary'} onClick={props.backClicked} disableElevation>
-            <ArrowBackIcon />
-          </Button>
-        </div>
-      )}{' '}
       <div className={classes.themeSelectContainer}>
         <StyledSwitch
           icon={<Brightness2Icon className={classes.switchIcon} />}

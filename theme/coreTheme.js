@@ -189,10 +189,10 @@ const coreTheme = {
     },
     MuiTableCell: {
       head: {
-        padding: "36px 24px"
+        padding: "36px 12px"
       },
       body: {
-        padding: "12px 24px",
+        padding: "9px 12px",
         borderBottom: "none"
       }
     }
