@@ -83,7 +83,7 @@ function Assets({ changeTheme, theme }) {
               <div>
                 <Typography variant='h1' className={ classes.blueText }>yDelegate</Typography>
                 <Typography variant='h2' className={ classes.helperText }>Maximizing your profits using the power of Yearn vaults</Typography>
-                <Typography className={ classes.helperText }>yDelegate puts your idle Aave capital to work. Making use of Yearn's Vaults, your funds will generate consistant yield without any additional management from you.</Typography>
+                <Typography className={ classes.helperText }>yDelegate puts your idle Aave capital to work. Making use of Yearn's Vaults, your funds will generate consistent yield without any additional management from you.</Typography>
                 <Button
                   size='large'
                   color='primary'
