@@ -8,7 +8,7 @@ export default class MyDocument extends Document {
     return (
       <Html lang="en">
         <Head>
-          <link rel="stylesheet" href="/fonts/Inter/Inter.css" />
+          <link rel="stylesheet" href="/fonts/Inter/inter.css" />
           <link rel="stylesheet" href="/fonts/Druk/Druk.css" />
         </Head>
         <body>
