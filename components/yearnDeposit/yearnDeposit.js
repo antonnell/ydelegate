@@ -1,5 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Paper, Tabs, Tab, TextField, InputAdornment, Button, Grid, Slider, CircularProgress, Stepper, Step, StepLabel, StepConnector } from '@material-ui/core';
+import {
+  Typography,
+  Paper,
+  Tabs,
+  Tab,
+  TextField,
+  InputAdornment,
+  Button,
+  Grid,
+  Slider,
+  CircularProgress,
+  Stepper,
+  Step,
+  StepLabel,
+  StepConnector,
+} from '@material-ui/core';
 import Skeleton from '@material-ui/lab/Skeleton';
 import BigNumber from 'bignumber.js';
 import { useRouter } from 'next/router';
@@ -69,10 +84,9 @@ function StyledStepIcon(props) {
 }
 
 export default function YearnDeposit({ asset }) {
-
   const [depositAmount, setDepositAmount] = useState('0');
   const [depositAmountError, setDepositAmountError] = useState(false);
-  const [activeStep, setActiveStep] = useState( asset.aaveVaultMetadata?.allowance > 0 ? 1 : 0 );
+  const [activeStep, setActiveStep] = useState(asset.aaveVaultMetadata?.allowance > 0 ? 1 : 0);
 
   const [approveLoading, setApproveLoading] = useState(false);
   const [depositLoading, setDepositLoading] = useState(false);
@@ -81,6 +95,8 @@ export default function YearnDeposit({ asset }) {
     const depositReturned = () => {
       setApproveLoading(false);
       setDepositLoading(false);
+
+      setDepositAmount('0');
     };
 
     const approveReturned = () => {
@@ -117,7 +133,7 @@ export default function YearnDeposit({ asset }) {
       type: DELEGATE_DEPOSIT,
       content: {
         asset: asset,
-        amount: depositAmount
+        amount: depositAmount,
       },
     });
   };
@@ -141,7 +157,7 @@ export default function YearnDeposit({ asset }) {
 
   const getSteps = () => {
     return ['Approval', 'Deposit'];
-  }
+  };
 
   return (
     <div className={classes.vaultActionContainer}>
@@ -183,10 +199,10 @@ export default function YearnDeposit({ asset }) {
         />
       </div>
       <div>
-        <Stepper alternativeLabel activeStep={activeStep} >
+        <Stepper alternativeLabel activeStep={activeStep}>
           {getSteps().map((label) => (
             <Step key={label}>
-              <StepLabel >{}</StepLabel>
+              <StepLabel>{}</StepLabel>
             </Step>
           ))}
         </Stepper>
@@ -199,15 +215,39 @@ export default function YearnDeposit({ asset }) {
           color="primary"
           size="large"
           onClick={onApproveMax}
-          disabled={approveLoading || BigNumber(asset.aaveVaultMetadata?.allowance).gt(depositAmount)}
-          className={ BigNumber(asset.aaveVaultMetadata?.allowance).gt(depositAmount) ? classes.approvedButton : null }
+          disabled={
+            approveLoading ||
+            BigNumber(asset.aaveVaultMetadata?.allowance).gt(depositAmount) ||
+            (BigNumber(asset.aaveVaultMetadata?.allowance).gt(0) && (!depositAmount || depositAmount === ''))
+          }
+          className={
+            BigNumber(asset.aaveVaultMetadata?.allowance).gt(depositAmount) ||
+            (BigNumber(asset.aaveVaultMetadata?.allowance).gt(0) && (!depositAmount || depositAmount === ''))
+              ? classes.approvedButton
+              : null
+          }
         >
-          <Typography variant="h5">{approveLoading ? <CircularProgress size={15} /> : ( BigNumber(asset.aaveVaultMetadata?.allowance).gt(depositAmount) ? 'Approved' : 'Approve')}</Typography>
-        </Button>
-        <Button fullWidth disableElevation variant="contained" color="primary" size="large" onClick={onDeposit} disabled={depositLoading || depositAmount === '' || BigNumber(depositAmount).lte(0)}>
           <Typography variant="h5">
-            {depositLoading ? <CircularProgress size={15} /> : 'Deposit' }
+            {approveLoading ? (
+              <CircularProgress size={15} />
+            ) : BigNumber(asset.aaveVaultMetadata?.allowance).gt(depositAmount) ||
+              (BigNumber(asset.aaveVaultMetadata?.allowance).gt(0) && (!depositAmount || depositAmount === '')) ? (
+              'Approved'
+            ) : (
+              'Approve'
+            )}
           </Typography>
+        </Button>
+        <Button
+          fullWidth
+          disableElevation
+          variant="contained"
+          color="primary"
+          size="large"
+          onClick={onDeposit}
+          disabled={depositLoading || depositAmount === '' || BigNumber(depositAmount).lte(0)}
+        >
+          <Typography variant="h5">{depositLoading ? <CircularProgress size={15} /> : 'Deposit'}</Typography>
         </Button>
       </div>
     </div>

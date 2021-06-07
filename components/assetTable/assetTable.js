@@ -15,9 +15,9 @@ import IconButton from '@material-ui/core/IconButton';
 import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
 import Paper from '@material-ui/core/Paper';
-import Tooltip from '@material-ui/core/Tooltip'
+import Tooltip from '@material-ui/core/Tooltip';
 
-import InfoIcon from "@material-ui/icons/Info";
+import InfoIcon from '@material-ui/icons/Info';
 import BigNumber from 'bignumber.js';
 import YearnDeposit from '../yearnDeposit';
 import YearnWithdraw from '../yearnWithdraw';
@@ -60,9 +60,23 @@ const headCells = [
     disablePadding: false,
     label: 'Wallet Balance',
   },
-  { id: 'aaveVaultMetadata.balance', numeric: true, disablePadding: false, label: 'Aave Borrow Rate', helperText: 'The variable cost of borrowing the asset from Aave per year' },
-  { id: 'yearnVaultMetadata.balance', numeric: true, disablePadding: false, label: 'Yearn Vault Growth', helperText: 'The amount your investment will grow per year in Yearn vaults' },
-  { id: 'netGrowth', numeric: true, disablePadding: false, label: 'Net growth', helperText: '{Net Growth} = {Yearn Vault Growth} - {Aave Borrow Rate}' },
+  {
+    id: 'aaveVaultMetadata.balance',
+    numeric: true,
+    disablePadding: false,
+    label: 'Aave Borrow',
+    helperText: `Your borrowed balance from Aave.
+    The variable cost of borrowing the asset from Aave per year`,
+  },
+  {
+    id: 'yearnVaultMetadata.balance',
+    numeric: true,
+    disablePadding: false,
+    label: 'Yearn Vault',
+    helperText: `Your vault balance in Yearn.
+    The amount your investment will grow per year in Yearn vaults`,
+  },
+  { id: 'netGrowth', numeric: true, disablePadding: false, label: 'Net growth', helperText: '{Net Growth} = {Yearn Vault} - {Aave Borrow}' },
   { id: '', numeric: false, disablePadding: false, label: '' },
 ];
 
@@ -78,11 +92,11 @@ function EnhancedTableHead(props) {
         {headCells.map((headCell) => (
           <TableCell key={headCell.id} align={headCell.numeric ? 'right' : 'left'} padding={'default'} sortDirection={orderBy === headCell.id ? order : false}>
             <TableSortLabel active={orderBy === headCell.id} direction={orderBy === headCell.id ? order : 'asc'} onClick={createSortHandler(headCell.id)}>
-              { headCell.helperText &&
+              {headCell.helperText && (
                 <Tooltip title={headCell.helperText}>
                   <InfoIcon className={classes.infoIcon} />
                 </Tooltip>
-              }
+              )}
               <Typography variant="h5">{headCell.label}</Typography>
               {orderBy === headCell.id ? <span className={classes.visuallyHidden}>{order === 'desc' ? 'sorted descending' : 'sorted ascending'}</span> : null}
             </TableSortLabel>
@@ -115,7 +129,7 @@ const useStyles = makeStyles((theme) => ({
   },
   infoIcon: {
     fontSize: '15px',
-    marginLeft: '6px'
+    marginLeft: '6px',
   },
   visuallyHidden: {
     border: 0,
@@ -342,7 +356,7 @@ export default function EnhancedTable({ assets }) {
                   </TableCell>
                   <TableCell className={classes.cell} align="right">
                     <Typography variant="h3" className={classes.textSpaced}>
-                      {formatCurrency( BigNumber(row.yearnVaultMetadata?.apy).minus(row.aaveVaultMetadata?.borrowRate) )} %
+                      {formatCurrency(BigNumber(row.yearnVaultMetadata?.apy).minus(row.aaveVaultMetadata?.borrowRate))} %
                     </Typography>
                   </TableCell>
                 </ExpandableTableRow>

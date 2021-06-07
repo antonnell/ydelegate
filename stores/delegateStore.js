@@ -87,22 +87,35 @@ class Store {
   };
 
   configure = async (payload) => {
-    const assets = this.getStore('assets');
+
+    const web3 = await stores.accountStore.getWeb3Provider();
+    if (!web3) {
+      return null;
+    }
+
+    const assets = await this._getAssets(web3)
 
     // get vault APYs
     const vaultsApiResult = await fetch('https://vaults.finance/all');
     const vaults = await vaultsApiResult.json();
 
+    const yDelegateContract = new web3.eth.Contract(Y_DELEGATE_ABI, Y_DELEGATE_ADDRESS);
+    const aaveLendingPoolContract = new web3.eth.Contract(AAVE_LENDING_POOL_ABI, AAVE_LENDING_POOL_ADDRESS);
+
     async.map(
       assets,
       (asset, callback) => {
-        this._getAssetsData(asset, vaults, callback);
+        this._getAssetsData(asset, vaults, yDelegateContract, aaveLendingPoolContract, web3, callback);
       },
       (err, data) => {
         if (err) {
           this.emitter.emit(ERROR, err);
           return;
         }
+        data = data.filter((d) => {
+          return d != null
+        })
+
         console.log(data);
         this.setStore({ assets: data, configured: true });
 
@@ -112,19 +125,33 @@ class Store {
     );
   };
 
-  _getAssetsData = async (asset, vaults, callback) => {
+  _getAssetsData = async (asset, vaults, yDelegateContract, aaveLendingPoolContract, web3, callback) => {
     try {
-      const web3 = await stores.accountStore.getWeb3Provider();
-      if (!web3) {
-        return null;
+
+      let aaveVaultAddress = null
+      let yearnVaultAddress = null
+      try {
+        aaveVaultAddress = await yDelegateContract.methods.approvalVariable(asset.address).call();
+        yearnVaultAddress = await yDelegateContract.methods.vault(asset.address).call();
+
+      } catch(ex) {
+        //we expect these to fail, if the asset isn't supported by yearn, it throws an exception. yay
+        callback(null, null)
+        return
       }
 
-      const yDelegateContract = new web3.eth.Contract(Y_DELEGATE_ABI, Y_DELEGATE_ADDRESS);
+      console.log(yearnVaultAddress)
+      if(!yearnVaultAddress) {
+        callback(null, null)
+        return
+      }
 
-      const aaveVaultAddress = await yDelegateContract.methods.approval(asset.address).call();
-      const yearnVaultAddress = await yDelegateContract.methods.vault(asset.address).call();
+      const erc20Contract = new web3.eth.Contract(ERC20_ABI, asset.address);
+      const symbol = await erc20Contract.methods.symbol().call()
+      const decimals = parseInt(await erc20Contract.methods.decimals().call())
 
-      const aaveLendingPoolContract = new web3.eth.Contract(AAVE_LENDING_POOL_ABI, AAVE_LENDING_POOL_ADDRESS);
+      asset.symbol = symbol
+      asset.decimals = decimals
 
       const reserveData = await aaveLendingPoolContract.methods.getReserveData(asset.address).call();
 
@@ -179,15 +206,28 @@ class Store {
   };
 
   getAssets = async (payload) => {
-    const assets = await this._getAssets();
+    const web3 = await stores.accountStore.getWeb3Provider();
+    if (!web3) {
+      return null;
+    }
+
+    const assets = await this._getAssets(web3);
 
     this.emitter.emit(ASSETS_RETURNED, assets);
   };
 
-  _getAssets = async () => {
-    // for now just return stored projects
-    return this.getStore('assets');
-  };
+  _getAssets = async (web3) => {
+
+    const lendingPoolContract = new web3.eth.Contract(AAVE_LENDING_POOL_ABI, AAVE_LENDING_POOL_ADDRESS);
+    const reservesList = await lendingPoolContract.methods.getReservesList().call()
+
+    return reservesList.map((reserveAddress) => {
+      return {
+        address: reserveAddress,
+        icon: `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/${web3.utils.toChecksumAddress(reserveAddress)}/logo.png`
+      }
+    })
+  }
 
   getBalances = async (payload) => {
     const web3 = await stores.accountStore.getWeb3Provider();
@@ -200,7 +240,7 @@ class Store {
       return null;
     }
 
-    const assets = await this._getAssets();
+    const assets = this.getStore('assets');
 
     //get all asset balances
     const assetBalancesPromise = assets.map((asset) => {
@@ -282,7 +322,7 @@ class Store {
     const aaveVaultAllowancePromise = assets.map((asset) => {
       return new Promise((resolve, reject) => {
 
-        resolve(yDelegateContract.methods.available(account.address, asset.address).call());
+        resolve(yDelegateContract.methods.availableVariable(account.address, asset.address).call());
       });
     });
     const aaveVaultAllowances = await Promise.all(aaveVaultAllowancePromise);
@@ -361,7 +401,7 @@ class Store {
 
     const gasPrice = await stores.accountStore.getGasPrice(gasSpeed);
 
-    this._callContract(web3, tokenContract, 'approveDelegation', [Y_DELEGATE_ADDRESS, amountToSend], account, gasPrice, DELEGATE_GET_BALANCES, {}, callback);
+    this._callContractWait(web3, tokenContract, 'approveDelegation', [Y_DELEGATE_ADDRESS, amountToSend], account, gasPrice, DELEGATE_GET_BALANCES, {}, callback);
   };
 
   approveWithdraw = async (payload) => {
@@ -400,7 +440,7 @@ class Store {
 
     const gasPrice = await stores.accountStore.getGasPrice(gasSpeed);
 
-    this._callContract(web3, tokenContract, 'approve', [Y_DELEGATE_ADDRESS, amountToSend], account, gasPrice, DELEGATE_GET_BALANCES, {}, callback);
+    this._callContractWait(web3, tokenContract, 'approve', [Y_DELEGATE_ADDRESS, amountToSend], account, gasPrice, DELEGATE_GET_BALANCES, {}, callback);
   };
 
   deposit = async (payload) => {
@@ -435,7 +475,7 @@ class Store {
 
     const gasPrice = await stores.accountStore.getGasPrice(gasSpeed);
 
-    this._callContract(web3, yDelegateContract, 'deposit', [asset.address, amountToSend], account, gasPrice, DELEGATE_GET_BALANCES, {}, callback);
+    this._callContractWait(web3, yDelegateContract, 'deposit', [asset.address, amountToSend, 2], account, gasPrice, DELEGATE_GET_BALANCES, {}, callback);
   };
 
   withdraw = async (payload) => {
@@ -474,7 +514,7 @@ class Store {
 
     const gasPrice = await stores.accountStore.getGasPrice(gasSpeed);
 
-    this._callContract(web3, yDelegateContract, 'withdraw', [asset.address, amountToSend, maxLoss], account, gasPrice, DELEGATE_GET_BALANCES, {}, callback);
+    this._callContractWait(web3, yDelegateContract, 'withdraw', [asset.address, amountToSend, maxLoss, 2], account, gasPrice, DELEGATE_GET_BALANCES, {}, callback);
   };
 
   _callContract = (web3, contract, method, params, account, gasPrice, dispatchEvent, dispatchEventPayload, callback) => {
@@ -488,18 +528,18 @@ class Store {
         context.emitter.emit(TX_SUBMITTED, hash);
         callback(null, hash);
       })
-      .on('receipt', function (receipt) {
-        callback(null, receipt.transactionHash);
-
-        if (dispatchEvent) {
-          context.dispatcher.dispatch({ type: dispatchEvent, content: dispatchEventPayload });
-        }
-      })
-      // .on('confirmation', function (confirmationNumber, receipt) {
-      //   if (dispatchEvent && confirmationNumber == 0) {
+      // .on('receipt', function (receipt) {
+      //   callback(null, receipt.transactionHash);
+      //
+      //   if (dispatchEvent) {
       //     context.dispatcher.dispatch({ type: dispatchEvent, content: dispatchEventPayload });
       //   }
       // })
+      .on('confirmation', function (confirmationNumber, receipt) {
+        if (dispatchEvent && confirmationNumber == 0) {
+          context.dispatcher.dispatch({ type: dispatchEvent, content: dispatchEventPayload });
+        }
+      })
       .on('error', function (error) {
         if (!error.toString().includes('-32601')) {
           if (error.message) {

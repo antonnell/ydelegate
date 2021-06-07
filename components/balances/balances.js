@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 
-import { Typography, Paper, TextField, InputAdornment, Grid } from '@material-ui/core';
+import { Typography, Paper, TextField, InputAdornment, Grid, Tooltip } from '@material-ui/core';
 import Skeleton from '@material-ui/lab/Skeleton';
 import classes from './balances.module.css';
 import BigNumber from 'bignumber.js';
+import InfoIcon from '@material-ui/icons/Info';
 
 import stores from '../../stores/index.js';
 import { DELEGATE_BALANCES_RETURNED } from '../../stores/constants';
@@ -33,22 +34,34 @@ function Balances() {
     <Paper elevation={1} className={classes.overviewContainer}>
       <div className={classes.overviewCard}>
         <div>
-          <Typography variant="h5">Aave Collateral</Typography>
+          <Typography variant="h5">Aave Collateral
+            <Tooltip title={'Aave Collateral: The value of the assets you have provided as collateral to Aave.'}>
+              <InfoIcon className={classes.infoIcon} />
+            </Tooltip>
+          </Typography>
           <Typography variant="h2">{ formatCurrency(aaveData ? aaveData.totalCollateralETH : 0, 4) } ETH</Typography>
         </div>
       </div>
       <div className={classes.separator}></div>
       <div className={classes.overviewCard}>
         <div>
-          <Typography variant="h5">Aave Borrow Limit</Typography>
+          <Typography variant="h5">Aave Borrow Limit
+            <Tooltip title={'Aave Borrow Limit: The maximum amount you can borrow from Aave.'}>
+              <InfoIcon className={classes.infoIcon} />
+            </Tooltip>
+          </Typography>
           <Typography variant="h2">{ formatCurrency(aaveData ? aaveData.availableBorrowsETH : 0, 4) } ETH</Typography>
         </div>
       </div>
       <div className={classes.separator}></div>
       <div className={classes.overviewCard}>
         <div>
-          <Typography variant="h5">Aave Health Factor</Typography>
-          <Typography variant="h2">{ aaveData?.healthFactor > 100 ? "Safe" : aaveData?.healthFactor }</Typography>
+          <Typography variant="h5">Aave Health Factor
+            <Tooltip title={'Aave Health Factor: The health factor represents the safety of your loan derived from the proportion of collateral versus amount borrowed. Keep it above 1 to avoid liquidation.'}>
+              <InfoIcon className={classes.infoIcon} />
+            </Tooltip>
+          </Typography>
+          <Typography variant="h2">{ BigNumber(aaveData?.healthFactor).div(1e18).gt(100) ? ">100" : BigNumber(aaveData?.healthFactor).div(1e18).toFixed(2) }</Typography>
         </div>
       </div>
     </Paper>

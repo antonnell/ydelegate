@@ -24,6 +24,11 @@
   flex: 1;
 }
 
+.infoIcon {
+  font-size: 13px !important;
+  margin-left: 6px;
+}
+
 @media screen and (max-width: 1600px) {
   .overviewContainer {
     margin: 24px 24px;

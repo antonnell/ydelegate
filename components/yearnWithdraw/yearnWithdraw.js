@@ -23,6 +23,8 @@ export default function YearnWithdraw({ asset }) {
   useEffect(function () {
     const withdrawReturned = () => {
       setWithdrawLoading(false);
+
+      setWithdrawAmount('0')
     };
     const approveReturned = () => {
       setApproveLoading(false);
